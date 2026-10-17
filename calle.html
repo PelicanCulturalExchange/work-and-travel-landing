@@ -116,6 +116,40 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
 .stat { background: color-mix(in srgb, var(--blue) 7%, var(--white)); border-radius: 14px; padding: 12px; }
 .stat b { display: block; font-size: 24px; color: var(--blue); line-height: 1.1; }
 .stat small { color: var(--deep); font-size: 13px; }
+
+/* notas por lead */
+.notebox { grid-column: 2 / 5; margin-top: -2px; }
+.nbtn { font-size: 13px !important; padding: 2px 2px !important; }
+.npanel { margin-top: 6px; }
+.npanel .chips { margin-top: 0; gap: 6px; }
+.chip.mini { min-height: 34px; padding: 4px 12px; font-size: 13px; }
+.npanel input { min-height: 44px; font-size: 15px; margin-top: 6px; }
+/* frases */
+.card.quote { background: var(--mint); box-shadow: 0 8px 0 var(--teal); }
+.quote q { display: block; quotes: none; font-weight: 700; font-size: 18px; line-height: 1.35; color: var(--deep); }
+.quote .qa { margin-top: 6px; font-weight: 800; color: var(--blue); font-size: 14px; }
+.quote .link { margin-top: 4px; }
+.qfade { animation: qin .5s ease; }
+@keyframes qin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* pantalla de arranque */
+.go-bg { position: fixed; inset: 0; z-index: 80; background: var(--navy); display: flex; align-items: center; justify-content: center; padding: 24px 20px; text-align: center; overflow: auto; }
+.go-in { width: 100%; max-width: 520px; }
+.go-in h1 { font-size: 34px; color: var(--white); }
+.go-in .u { color: var(--neon); font-weight: 800; font-size: 20px; margin-top: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.go-in .d { color: var(--mint); margin-top: 6px; }
+.go-q { margin-top: 22px; background: color-mix(in srgb, var(--white) 10%, transparent); border-radius: 18px; padding: 14px 16px; color: var(--white); }
+.go-q b { display: block; margin-top: 6px; color: var(--neon); font-size: 14px; }
+.go-num { font-size: 170px; line-height: 1; font-weight: 800; color: var(--neon); animation: pop .9s ease-out both; }
+.go-num.fin { font-size: 56px; line-height: 1.1; color: var(--white); }
+@keyframes pop { 0% { transform: scale(.3); opacity: 0; } 25% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(.9); opacity: .85; } }
+/* foto del equipo */
+.photo-card { background: linear-gradient(180deg, var(--mint), var(--white)); }
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.thumb { position: relative; width: 96px; height: 96px; border-radius: 14px; overflow: hidden; border: 3px solid var(--green); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb span { position: absolute; right: 4px; bottom: 4px; background: var(--navy); color: var(--neon); font-size: 12px; font-weight: 800; border-radius: 8px; padding: 1px 7px; }
+.btn.file { position: relative; overflow: hidden; }
+.btn.file input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; font-size: 0; }
 </style>
 </head>
 <body>
@@ -134,9 +168,36 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   var KEY = "pelican_calle_v1";
 
   /* ---------- estado ---------- */
-  function blank() { return { pin: "", asesor: "", salida: null, team: [], myMid: "", serverLeads: 0, rows: [], outbox: [], skew: 0, resumen: null, celebrated: {} }; }
+  function blank() { return { pin: "", asesor: "", salida: null, team: [], myMid: "", serverLeads: 0, rows: [], outbox: [], skew: 0, resumen: null, celebrated: {}, hitos: {} }; }
   var S = (function () { try { var j = JSON.parse(localStorage.getItem(KEY)); if (j && typeof j === "object") return Object.assign(blank(), j); } catch (e) { } return blank(); })();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+  var QUOTES = [
+    { t: "No cuentes los días, haz que los días cuenten.", a: "Muhammad Ali" },
+    { t: "Todo parece imposible hasta que se hace.", a: "Nelson Mandela" },
+    { t: "Cree que puedes y ya estás a medio camino.", a: "Theodore Roosevelt" },
+    { t: "Empieza donde estás. Usa lo que tienes. Haz lo que puedas.", a: "Arthur Ashe" },
+    { t: "El único modo de hacer un gran trabajo es amar lo que haces.", a: "Steve Jobs" },
+    { t: "La disciplina es el puente entre las metas y los logros.", a: "Jim Rohn" },
+    { t: "Cae siete veces, levántate ocho.", a: "Proverbio japonés" },
+    { t: "El éxito es la suma de pequeños esfuerzos repetidos día tras día.", a: "Robert Collier" },
+    { t: "Los sueños no funcionan a menos que tú lo hagas.", a: "John C. Maxwell" },
+    { t: "Lo que haces hoy puede mejorar todos tus mañanas.", a: "Ralph Marston" },
+    { t: "La acción es la clave fundamental de todo éxito.", a: "Pablo Picasso" },
+    { t: "Siente el miedo y hazlo de todos modos.", a: "Susan Jeffers" },
+    { t: "El que no arriesga no gana.", a: "Refrán popular" },
+    { t: "No esperes. El tiempo nunca será justo el adecuado.", a: "Napoleon Hill" }
+  ];
+  var qIdx = -1, quoteTimer = null;
+  function pickQuote() { var i; do { i = Math.floor(Math.random() * QUOTES.length); } while (i === qIdx && QUOTES.length > 1); qIdx = i; return QUOTES[i]; }
+  function paintQuote(animate) {
+    var b = $("quote"); if (!b) return; var q = pickQuote();
+    b.innerHTML = '<q>“' + esc(q.t) + '”</q><div class="qa">— ' + esc(q.a) + '</div><button class="link" id="qnext" type="button">Otra frase</button>';
+    if (animate) { b.classList.remove("qfade"); void b.offsetWidth; b.classList.add("qfade"); }
+    $("qnext").onclick = function () { paintQuote(true); };
+  }
+  function beep(f, ms) { try { var A = window.AudioContext || window.webkitAudioContext; if (!A) return; var c = new A(), o = c.createOscillator(), g = c.createGain(); o.frequency.value = f; g.gain.value = .08; o.connect(g); g.connect(c.destination); o.start(); setTimeout(function () { o.stop(); c.close(); }, ms); } catch (e) { } }
+  function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { } }
+
   var online = true, flushing = false, syncing = false, cfg = null, confirmLeave = "", syncTimer = null;
 
   /* ---------- utilidades ---------- */
@@ -192,7 +253,8 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
       if (!S.outbox.length) return Promise.resolve();
       return api(S.outbox[0]).then(function (j) {
         if (j && j.error === "pin") { logout("La clave cambió. Vuelve a entrar."); return Promise.reject("pin"); }
-        S.outbox.shift(); save(); setOnline(true); return step();
+        if (j && j.ok === false && j.error === "error_servidor") { setOnline(false); return Promise.reject("srv"); }
+        var done = S.outbox.shift(); if (done && done.accion === "salida_foto" && S.resumen && S.resumen.fotos) S.resumen.fotos.forEach(function (f) { if (f.id === done.id) f.sent = true; }); save(); setOnline(true); if (done && done.accion === "salida_foto" && S.resumen && !S.salida) screenResumen(); return step();
       }, function () { setOnline(false); return Promise.reject("net"); });
     }
     return step().catch(function () { }).then(function () { flushing = false; });
@@ -201,7 +263,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   /* ---------- filas / leads ---------- */
   function isValid(r) { return String(r.nombre || "").trim().length >= 2 && !!normPhone(r.tel) && normPhone(r.tel) !== "fake"; }
   function pending() { return S.rows.filter(function (r) { return isValid(r) && (!r.sent || r.dirty); }); }
-  function newRow() { return { id: "L" + uid(), sid: S.salida ? S.salida.id : "", uni: S.salida ? S.salida.universidad : "", asesor: S.asesor, nombre: "", tel: "", hora: "", sent: false, dirty: false, rep: false, ver: 0, err: "" }; }
+  function newRow() { return { id: "L" + uid(), sid: S.salida ? S.salida.id : "", uni: S.salida ? S.salida.universidad : "", asesor: S.asesor, nombre: "", tel: "", nota: "", hora: "", sent: false, dirty: false, rep: false, ver: 0, err: "" }; }
   function rowById(id) { for (var i = 0; i < S.rows.length; i++) if (S.rows[i].id === id) return S.rows[i]; return null; }
   function syncLeads() {
     if (syncing || !S.pin) return Promise.resolve();
@@ -209,7 +271,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     if (!list.length) return Promise.resolve();
     syncing = true;
     var vers = {}; list.forEach(function (r) { vers[r.id] = r.ver; });
-    return api({ accion: "calle_leads", leads: list.map(function (r) { return { id: r.id, nombre: r.nombre.trim(), whatsapp: normPhone(r.tel), universidad: r.uni, asesor: r.asesor, salida: r.sid, hora: r.hora }; }) }).then(function (j) {
+    return api({ accion: "calle_leads", leads: list.map(function (r) { return { id: r.id, nombre: r.nombre.trim(), whatsapp: normPhone(r.tel), universidad: r.uni, asesor: r.asesor, salida: r.sid, hora: r.hora, nota: (r.nota || "").trim() }; }) }).then(function (j) {
       syncing = false; setOnline(true);
       if (j && j.error === "pin") { logout("La clave cambió. Vuelve a entrar."); return; }
       ((j && j.resultados) || []).forEach(function (x) {
@@ -264,7 +326,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   }
   function buildResumen(fin) {
     var s = S.salida, me = S.team.filter(function (t) { return t.mid === S.myMid; })[0];
-    return { uni: s.universidad, meta: s.meta, total: totalLeads(), mine: mineLeads(), entro: me ? me.entro : s.inicio, salio: fin, equipo: S.team.length, inicio: s.inicio };
+    return { uni: s.universidad, meta: s.meta, total: totalLeads(), mine: mineLeads(), entro: me ? me.entro : s.inicio, salio: fin, equipo: S.team.length, inicio: s.inicio, sid: s.id, fotos: [] };
   }
   function closeMine() { S.resumen = buildResumen(nowMs()); S.salida = null; S.team = []; S.myMid = ""; save(); runSync(); render(); }
   function endAll() {
@@ -404,7 +466,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
       if (!cfg.asesores.length) { $("se").textContent = "Elige al menos un asesor."; return; }
       if (!(cfg.meta >= 1)) { $("se").textContent = "Pon una meta de leads."; return; }
       if (!l || l <= nowMs() + 60000) { $("se").textContent = "Elige una hora de salida que todavía no haya pasado."; return; }
-      var c = { uni: uni, asesores: cfg.asesores.slice(), meta: cfg.meta, limite: l }; cfg = null; startSalida(c);
+      var c = { uni: uni, asesores: cfg.asesores.slice(), meta: cfg.meta, limite: l, durMin: cfg.modo === "dur" ? cfg.dur : 0 }; introSalida(c);
     };
     // salidas activas hoy: para unirse
     apiGet({ accion: "activas" }).then(function (j) {
@@ -417,12 +479,29 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     }, function () { setOnline(false); var n = $("net"); if (n) n.hidden = false; });
   }
 
+  /* --- cuenta regresiva de arranque --- */
+  function introSalida(c) {
+    var q = pickQuote(), box = document.createElement("div"); box.className = "go-bg"; box.id = "goBg";
+    box.innerHTML = '<div class="go-in" id="goIn"><h1>¿Listos para la calle?</h1><div class="u">' + esc(c.uni) + '</div><div class="d">Meta: ' + c.meta + ' leads · ' + (c.durMin ? human(c.durMin * 60000) : 'hasta las ' + hm(c.limite)) + '</div>' +
+      '<div class="go-q">“' + esc(q.t) + '”<b>— ' + esc(q.a) + '</b></div><button class="btn" id="goYes" type="button">¡Estamos listos!</button><button class="link" id="goNo" type="button" style="color:var(--mint)">Volver</button></div>';
+    document.body.appendChild(box);
+    $("goNo").onclick = function () { box.remove(); };
+    $("goYes").onclick = function () {
+      var inn = $("goIn"), n = 3;
+      function show() {
+        if (n > 0) { inn.innerHTML = '<div class="go-num" id="gn">' + n + '</div>'; beep(520, 140); buzz(60); n--; setTimeout(show, 950); }
+        else { inn.innerHTML = '<div class="go-num fin">¡A LA CALLE!</div>'; beep(880, 380); buzz([100, 60, 160]); setTimeout(function () { box.remove(); if (c.durMin) c.limite = nowMs() + c.durMin * 60000; cfg = null; startSalida(c); }, 900); }
+      }
+      show();
+    };
+  }
+
   /* --- salida en curso --- */
   function screenSalida() {
     $("hudbox").innerHTML = '<div class="hud" id="hud"><div class="hud-row"><span class="uni" id="hUni"></span><span class="hasta" id="hHasta"></span></div><div class="clock" id="clock">--:--:--</div><div class="clock-sub" id="clocksub"></div><div class="tbar"><span id="tbar" style="width:100%"></span></div></div>';
     if (!S.rows.some(function (r) { return r.sid === S.salida.id; })) { for (var i = 0; i < 5; i++) S.rows.push(newRow()); save(); }
     $("app").innerHTML = '<div class="net" id="net" hidden>Sin señal: tus leads se guardan en este teléfono y se envían solos cuando vuelva. No cierres la página.</div>' +
-      '<section class="card" id="prog"></section><section class="card" id="team"></section>' +
+      '<section class="card" id="prog"></section><section class="card quote" id="quote"></section><section class="card" id="team"></section>' +
       '<section class="card"><div class="listhead"><h3>Lista de leads</h3><button class="link" id="pegar">Pegar varios</button></div><p class="hint">Escribe nombre y celular. Se guardan y se envían solos. Cada lead queda con su hora.</p><div id="rows"></div>' +
       '<button class="btn small blue" id="send">Enviar ahora</button><p class="hint" id="syncinfo" style="text-align:center;margin-top:8px"></p></section>' +
       '<section class="card"><h3>Cerrar</h3><button class="btn ghost small" id="meVoy">Me voy (los demás siguen)</button><button class="btn salmon small" id="finAll">Terminar la salida para todos</button></section>';
@@ -431,6 +510,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     S.rows.filter(function (r) { return r.sid === S.salida.id; }).forEach(function (r, i) { rowsBox.appendChild(rowEl(r, i + 1)); });
     rowsBox.addEventListener("input", onRowInput);
     rowsBox.addEventListener("focusout", onRowBlur);
+    rowsBox.addEventListener("click", onRowClick);
     $("send").onclick = function () { this.textContent = "Enviando…"; var b = this; runSync().then(function () { b.textContent = "Enviar ahora"; updateRows(); }); };
     $("pegar").onclick = openPaste;
     $("meVoy").onclick = function () {
@@ -439,13 +519,14 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     $("finAll").onclick = function () {
       sheet('<h3>¿Terminar para todos?</h3><p>Se cierra la salida de ' + esc(S.salida.universidad) + ' para todo el equipo. Si alguien solo se va, mejor usa "Me voy".</p><button class="btn salmon" id="si">Sí, terminar todo</button><button class="btn ghost small" id="no">Cancelar</button>', function (r) { r.querySelector("#no").onclick = closeSheet; r.querySelector("#si").onclick = function () { closeSheet(); endAll(); }; });
     };
+    paintQuote(false); clearInterval(quoteTimer); quoteTimer = setInterval(function () { if ($("quote")) paintQuote(true); }, 150000);
     updateAll(); tick();
   }
 
   function rowEl(r, n) {
     var d = document.createElement("div"); d.className = "row"; d.setAttribute("data-id", r.id);
-    d.innerHTML = '<span class="n">' + n + '</span><input class="nm" type="text" placeholder="Nombre" autocomplete="off" autocapitalize="words" aria-label="Nombre ' + n + '"><input class="tl" type="tel" inputmode="tel" placeholder="09 9999 9999" autocomplete="off" aria-label="Celular ' + n + '"><span class="st" aria-live="polite"></span><div class="meta"></div>';
-    d.querySelector(".nm").value = r.nombre; d.querySelector(".tl").value = r.tel; paintRow(d, r); return d;
+    d.innerHTML = '<span class="n">' + n + '</span><input class="nm" type="text" placeholder="Nombre" autocomplete="off" autocapitalize="words" aria-label="Nombre ' + n + '"><input class="tl" type="tel" inputmode="tel" placeholder="09 9999 9999" autocomplete="off" aria-label="Celular ' + n + '"><span class="st" aria-live="polite"></span><div class="meta"></div><div class="notebox"><button type="button" class="link nbtn">+ Nota</button><div class="npanel" hidden><div class="chips ntags"><button type="button" class="chip mini" data-t="Muy interesado/a">Muy interesado/a</button><button type="button" class="chip mini" data-t="Aplica a otro programa">Aplica a otro programa</button><button type="button" class="chip mini" data-t="Viene en grupo">Viene en grupo</button></div><input class="nt" type="text" maxlength="200" placeholder="Otra nota (opcional)" autocomplete="off"></div></div>';
+    d.querySelector(".nm").value = r.nombre; d.querySelector(".tl").value = r.tel; d.querySelector(".nt").value = r.nota || ""; paintRow(d, r); return d;
   }
   function paintRow(d, r) {
     var ok = isValid(r), st = d.querySelector(".st"), meta = d.querySelector(".meta"), bits = [];
@@ -456,7 +537,9 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     var html = bits.join(" · ");
     if (r.rep) html += ' <span class="bad">Ya estaba registrado antes</span>';
     if (r.err) html += ' <span class="bad">' + esc(r.err) + '</span>';
+    if (r.warn) html += ' <span class="bad">' + esc(r.warn) + '</span>';
     meta.innerHTML = html;
+    var nb = d.querySelector(".nbtn"); if (nb) nb.textContent = r.nota ? "Nota: " + (r.nota.length > 34 ? r.nota.slice(0, 34) + "…" : r.nota) : "+ Nota";
   }
   function visibleRows() { return S.rows.filter(function (r) { return S.salida && r.sid === S.salida.id; }); }
   function updateRows() {
@@ -472,32 +555,47 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   }
   function onRowInput(e) {
     var d = e.target.closest(".row"); if (!d) return; var r = rowById(d.getAttribute("data-id")); if (!r) return;
-    if (e.target.classList.contains("nm")) r.nombre = e.target.value; else r.tel = e.target.value;
-    r.ver++; if (r.sent) r.dirty = true; r.err = "";
+    var isNote = e.target.classList.contains("nt");
+    if (isNote) r.nota = e.target.value; else if (e.target.classList.contains("nm")) r.nombre = e.target.value; else r.tel = e.target.value;
+    r.ver++; if (r.sent) r.dirty = true; r.err = ""; r.warn = "";
     if (isValid(r) && !r.hora) r.hora = nowIso();
-    addBlankIfNeeded(); paintRow(d, r); save(); updateProgress(); updateTeam(); updateRows();
+    if (!isNote) addBlankIfNeeded(); paintRow(d, r); save(); updateProgress(); updateTeam(); updateRows();
     if (isValid(r)) scheduleSync(4000);
+  }
+  function onRowClick(e) {
+    var d = e.target.closest(".row"); if (!d) return; var r = rowById(d.getAttribute("data-id")); if (!r) return;
+    if (e.target.closest(".nbtn")) { var pn = d.querySelector(".npanel"); pn.hidden = !pn.hidden; if (!pn.hidden) d.querySelector(".nt").focus(); return; }
+    var tg = e.target.closest(".ntags .chip"); if (!tg) return;
+    var t = tg.getAttribute("data-t"), cur = (r.nota || "").trim();
+    if (cur.indexOf(t) < 0) r.nota = cur ? cur + " · " + t : t;
+    d.querySelector(".nt").value = r.nota; r.ver++; if (r.sent) r.dirty = true;
+    if (isValid(r) && !r.hora) r.hora = nowIso();
+    paintRow(d, r); save(); updateRows(); if (isValid(r)) scheduleSync(2500);
   }
   function onRowBlur(e) {
     var d = e.target.closest && e.target.closest(".row"); if (!d || !e.target.classList.contains("tl")) return;
     var r = rowById(d.getAttribute("data-id")); if (!r) return;
-    var meta = d.querySelector(".meta"), p = normPhone(r.tel);
-    if (r.tel.trim() && !p) { meta.innerHTML = '<span class="bad">Debe ser un celular: 10 dígitos que empiezan con 09</span>'; return; }
-    if (p === "fake") { meta.innerHTML = '<span class="bad">Ese número no parece real, revísalo</span>'; return; }
-    if (p) { e.target.value = pretty(p); r.tel = e.target.value; save(); }
-    if (r.tel.trim() && String(r.nombre).trim().length < 2) { meta.innerHTML = '<span class="bad">Falta el nombre</span>'; return; }
+    var p = normPhone(r.tel); r.warn = "";
+    if (r.tel.trim() && !p) r.warn = "Debe ser un celular: 10 dígitos que empiezan con 09";
+    else if (p === "fake") r.warn = "Ese número no parece real, revísalo";
+    else { if (p) { e.target.value = pretty(p); r.tel = e.target.value; save(); } if (r.tel.trim() && String(r.nombre).trim().length < 2) r.warn = "Falta el nombre"; }
     paintRow(d, r);
   }
 
   function openPaste() {
-    sheet('<h3>Pegar varios</h3><p class="hint">Una persona por línea, con nombre y celular. Ejemplo: Camila Andrade 0985271634</p><textarea id="pt" placeholder="Camila Andrade 0985271634&#10;Luis Mora, 0974412205"></textarea><div class="err" id="pe"></div><button class="btn" id="padd">Agregar a la lista</button><button class="btn ghost small" id="pno">Cancelar</button>', function (r) {
+    sheet('<h3>Pegar varios</h3><p class="hint">Una persona por línea: nombre, celular y, si quieres, una nota al final. Ejemplo: Camila Andrade 0985271634 muy interesada</p><textarea id="pt" placeholder="Camila Andrade 0985271634 muy interesada&#10;Luis Mora, 0974412205"></textarea><div class="err" id="pe"></div><button class="btn" id="padd">Agregar a la lista</button><button class="btn ghost small" id="pno">Cancelar</button>', function (r) {
       r.querySelector("#pno").onclick = closeSheet;
       r.querySelector("#padd").onclick = function () {
         var lines = r.querySelector("#pt").value.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean), added = 0, bad = 0;
         var empties = visibleRows().filter(function (x) { return !x.nombre && !x.tel; }); S.rows = S.rows.filter(function (x) { return empties.indexOf(x) < 0; });
         lines.forEach(function (l) {
           var m = l.match(/(?:\+?593[\s.\-]*|0[\s.\-]*)?9(?:[\s.\-]*\d){8}/), row = newRow();
-          if (m) { row.tel = m[0].trim(); row.nombre = l.replace(m[0], " ").replace(/[,;:|\-–]+/g, " ").replace(/\s+/g, " ").trim(); var p = normPhone(row.tel); if (p && p !== "fake") row.tel = pretty(p); }
+          if (m) {
+            row.tel = m[0].trim(); var cl = function (x) { return x.replace(/[,;:|\-–]+/g, " ").replace(/\s+/g, " ").trim(); };
+            var antes = cl(l.slice(0, m.index).replace(/^\s*\d{1,3}\s*[.)\-:]\s+/, "")), desp = cl(l.slice(m.index + m[0].length));
+            if (antes.length >= 2) { row.nombre = antes; row.nota = desp; } else { row.nombre = desp; }
+            var p = normPhone(row.tel); if (p && p !== "fake") row.tel = pretty(p);
+          }
           else { row.nombre = l.replace(/[,;:|]+/g, " ").trim(); }
           row.ver = 1; if (isValid(row)) { row.hora = nowIso(); added++; } else bad++;
           S.rows.push(row);
@@ -536,6 +634,9 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
       '<p class="msg">' + msg + (tot > s.meta ? ' +' + (tot - s.meta) + ' extra' : '') + '</p>' + (pace ? '<p class="pace">' + esc(pace) + '</p>' : '') + '<p class="mine">Tus leads: <b>' + mine + '</b> · <button class="link" id="btnMas">+30 min de tiempo</button></p>';
     $("btnMeta").onclick = openMeta;
     $("btnMas").onclick = function () { S.salida.limite += 30 * 60000; save(); queue({ accion: "salida_editar", id: S.salida.id, limite: new Date(S.salida.limite).toISOString() }); updateHud(); tick(); };
+    var hito = pct >= 75 ? 75 : pct >= 50 ? 50 : pct >= 25 ? 25 : 0;
+    if (hito > (S.hitos[s.id] || 0)) { var first = S.hitos[s.id] === undefined; S.hitos[s.id] = hito; save(); if (!first || hito) { paintQuote(true); buzz(80); } }
+    else if (S.hitos[s.id] === undefined) { S.hitos[s.id] = 0; }
     if (pct >= 100 && !S.celebrated[s.id]) { S.celebrated[s.id] = true; save(); confetti(); }
   }
   function openMeta() {
@@ -583,13 +684,45 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   }
 
   /* --- resumen --- */
+  function compressPhoto(file) {
+    return new Promise(function (ok, no) {
+      var fr = new FileReader();
+      fr.onerror = function () { no(); };
+      fr.onload = function () {
+        var im = new Image();
+        im.onerror = function () { no(); };
+        im.onload = function () {
+          function mk(max, q) { var k = Math.min(1, max / Math.max(im.width, im.height)), w = Math.round(im.width * k), h = Math.round(im.height * k), cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").drawImage(im, 0, 0, w, h); return { url: cv.toDataURL("image/jpeg", q), w: w, h: h }; }
+          ok({ full: mk(900, 0.72), thumb: mk(180, 0.6) });
+        };
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+  function addFoto(file) {
+    var st = $("fotoMsg"); if (st) st.textContent = "Preparando foto…";
+    compressPhoto(file).then(function (c) {
+      var id = "F" + uid(); if (!S.resumen.fotos) S.resumen.fotos = [];
+      S.resumen.fotos.push({ id: id, thumb: c.thumb.url, sent: false });
+      S.outbox.push({ accion: "salida_foto", id: id, salida: S.resumen.sid, asesor: S.asesor, foto: c.full.url, w: c.full.w, h: c.full.h, hora: nowIso() });
+      try { save(); } catch (e) { }
+      screenResumen(); flush();
+    }, function () { if (st) st.textContent = "No pude leer esa foto. Intenta otra vez."; });
+  }
   function screenResumen() {
     var r = S.resumen, p = pending().length, pct = r.meta ? Math.round(r.total * 100 / r.meta) : 0;
     $("app").innerHTML = '<div class="net" id="net" hidden>Sin señal: tus leads quedan guardados y se envían solos cuando vuelva.</div><section class="card"><h2>¡Buen trabajo, ' + esc(S.asesor) + '!</h2><p class="hint">' + esc(r.uni) + '</p>' +
       '<div class="stats"><div class="stat"><b>' + r.mine + '</b><small>leads tuyos</small></div><div class="stat"><b>' + r.total + ' / ' + r.meta + '</b><small>equipo · ' + pct + '% de la meta</small></div>' +
       '<div class="stat"><b>' + hm(r.entro) + ' – ' + hm(r.salio) + '</b><small>tu horario</small></div><div class="stat"><b>' + human(r.salio - r.entro) + '</b><small>tiempo en la salida</small></div></div>' +
       '<p class="hint" id="rp" style="margin-top:12px;font-weight:700">' + (p ? p + ' lead(s) todavía sin enviar. Sigue con señal.' : 'Todos tus leads están enviados.') + '</p>' +
-      '<button class="btn small blue" id="rs">Enviar pendientes</button><button class="btn" id="nueva">Nueva salida</button></section>';
+      '<button class="btn small blue" id="rs">Enviar pendientes</button></section>' +
+      '<section class="card photo-card"><h2>¡Foto del equipo!</h2><p>Dieron todo en la calle. Ahora tómense una foto juntos, con la mejor energía y la mejor sonrisa. ¡Se la ganaron!</p>' +
+      '<label class="btn file">Tomar la foto del equipo<input type="file" id="foto" accept="image/*"></label><p class="hint" id="fotoMsg" style="margin-top:8px"></p>' +
+      '<div class="thumbs">' + ((r.fotos || []).map(function (f) { return '<div class="thumb"><img alt="Foto del equipo" src="' + f.thumb + '"><span>' + (f.sent ? "✓" : "…") + '</span></div>'; }).join("")) + '</div></section>' +
+      '<section class="card quote" id="quote"></section><section class="card"><button class="btn" id="nueva">Nueva salida</button></section>';
+    paintQuote(false);
+    $("foto").onchange = function () { if (this.files && this.files[0]) addFoto(this.files[0]); };
     $("net").hidden = online; $("rs").hidden = !p;
     $("rs").onclick = function () { runSync().then(function () { screenResumen(); }); };
     $("nueva").onclick = function () { S.resumen = null; save(); render(); };
