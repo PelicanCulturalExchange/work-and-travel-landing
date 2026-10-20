@@ -72,13 +72,12 @@ body { background: var(--page); }
 #faq           { background: radial-gradient(44% 50% at 92% 40%, rgba(63,164,163,0.12), transparent 72%); }
 #registro      { background: radial-gradient(52% 46% at 12% 30%, rgba(85,177,73,0.12), transparent 72%); }
 
-/* capas: fondo de la portada (0) → pétalos (1) → contenido (2) */
+/* capas de la portada: foto (0) → pétalos (1) → contenido (2) */
 main, .top, footer { position: relative; }
 .top, footer { z-index: 3; }
 .s > .wrap, .hero > .wrap { position: relative; z-index: 2; }
-#petalos { position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; z-index: 1; }
-.petalos-fijos { position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; z-index: 1; overflow: hidden; }
-.petalos-fijos i { position: absolute; display: block; width: 24px; height: 20px; opacity: .07; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 24'%3E%3Cpath d='M14 23C6 19 1 12 3 6c2-5 7-6 9-2l2 3 2-3c2-4 7-3 9 2 2 6-3 13-11 17z' fill='%23f3c2c6'/%3E%3C/svg%3E"); }
+.hero-petalos { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.hero-petalos i { position: absolute; display: block; will-change: transform; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 24'%3E%3Cpath d='M14 23C6 19 1 12 3 6c2-5 7-6 9-2l2 3 2-3c2-4 7-3 9 2 2 6-3 13-11 17z' fill='%23f6c4cc'/%3E%3C/svg%3E"); }
 
 /* secciones claras: paneles redondeados en blanco suave (menos reflejo que el blanco puro) */
 .bg-white { background: #f3f7f6; color: #0b2a38; }
@@ -734,135 +733,93 @@ footer small { opacity: .75; font-size: 13px; }
 })();
 </script>
 
-<canvas id="petalos" aria-hidden="true" hidden></canvas>
 <script>
-/* Ambiente de primavera.
-   Computador con mouse: pétalos que caen despacio sobre la pantalla (fijos a la ventana, el scroll no los mueve),
-   aparecen y se desvanecen, van detrás del contenido y se mueven un poco con el mouse, igual que la foto de portada.
-   Celular, tablet o "reducir movimiento": pocos pétalos quietos y casi invisibles, repartidos por la ventana. */
+/* Pétalos de la portada. Viven dentro de la sección de inicio, igual que la foto, y se van con ella al hacer scroll.
+   Computador: caen despacio, aparecen y se desvanecen, y reaccionan al mouse. Celular o "reducir movimiento": quietos. */
 (function () {
   "use strict";
+  var hero = document.querySelector(".hero");
+  if (!hero) return;
   var mq = window.matchMedia || function () { return { matches: false }; };
-  var ancho = 0;
-  var fino = mq("(hover: hover) and (pointer: fine)").matches;
-  var quieto = mq("(prefers-reduced-motion: reduce)").matches;
-  var BLOQUES = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap li,.wrap a,.wrap img,.wrap summary,.wrap details,.card,.glass,.mint,.job,.box,.tag,.no-box,.chip,.step,.jay,.poster,.crew img,.sec-head,.bg-white,.top,footer";
+  var mueve = mq("(hover: hover) and (pointer: fine)").matches && !mq("(prefers-reduced-motion: reduce)").matches;
+  var cap = document.createElement("div");
+  cap.className = "hero-petalos"; cap.setAttribute("aria-hidden", "true");
+  hero.insertBefore(cap, hero.querySelector(".wrap"));
 
-  function rectsDoc(pad) {
-    var out = [], sx = window.scrollX, sy = window.scrollY;
-    document.querySelectorAll(BLOQUES).forEach(function (el) {
-      var r = el.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2) return;
-      out.push([r.left + sx - pad, r.top + sy - pad, r.right + sx + pad, r.bottom + sy + pad]);
-    });
-    return out;
-  }
-  function libre(rs, x, y) {
-    for (var i = 0; i < rs.length; i++) { var r = rs[i]; if (x > r[0] && x < r[2] && y > r[1] && y < r[3]) return false; }
-    return true;
-  }
-
-  /* ---------- versión quieta (celular / reducir movimiento): capa fija a la ventana ---------- */
-  function estaticos() {
-    var cap = document.createElement("div");
-    cap.className = "petalos-fijos"; cap.setAttribute("aria-hidden", "true");
-    document.body.appendChild(cap);
-    function poner() {
-      cap.innerHTML = "";
-      var W = window.innerWidth, H = cap.clientHeight || window.innerHeight, semilla = 7; ancho = W;
-      function rnd() { semilla = (semilla * 9301 + 49297) % 233280; return semilla / 233280; }
-      var cols = W < 600 ? 3 : 6, filas = W < 600 ? 5 : 4;          // reparto parejo en toda la pantalla
-      for (var f = 0; f < filas; f++) for (var c = 0; c < cols; c++) {
-        var i = document.createElement("i");
-        i.style.left = ((c + 0.15 + rnd() * 0.7) / cols * W) + "px";
-        i.style.top = ((f + 0.15 + rnd() * 0.7) / filas * H) + "px";
-        i.style.transform = "rotate(" + Math.round(rnd() * 360) + "deg) scale(" + (0.8 + rnd() * 0.5).toFixed(2) + ")";
-        cap.appendChild(i);
-      }
+  var semilla = 11; function rnd() { semilla = (semilla * 9301 + 49297) % 233280; return semilla / 233280; }
+  var P = [];
+  function poner() {
+    cap.innerHTML = ""; P = [];
+    var W = hero.clientWidth, H = hero.clientHeight, chico = W < 700;
+    var cols = chico ? 3 : 6, filas = chico ? 5 : 3;                  // reparto parejo en toda la portada
+    for (var f = 0; f < filas; f++) for (var c = 0; c < cols; c++) {
+      var z = 0.4 + rnd() * 0.6, i = document.createElement("i");
+      var w = Math.round((chico ? 22 : 28) + z * (chico ? 14 : 26));
+      i.style.width = w + "px"; i.style.height = Math.round(w * 0.86) + "px";
+      i.style.left = Math.round((c + 0.12 + rnd() * 0.76) / cols * W - w / 2) + "px";
+      i.style.top = Math.round((f + 0.12 + rnd() * 0.76) / filas * H - w / 2) + "px";
+      i.style.opacity = (0.06 + z * 0.04).toFixed(3);                  // 6% a 10%
+      var rot = Math.round(rnd() * 360);
+      i.dataset.rot = rot; i.dataset.z = z.toFixed(2);
+      i.style.transform = "rotate(" + rot + "deg)";
+      cap.appendChild(i); P.push(i);
     }
-    var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(function () { if (window.innerWidth !== ancho) poner(); }, 300); });   // solo si cambia el ancho
-    poner();
   }
+  poner();
+  var ancho = hero.clientWidth, tm;
+  window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(function () { if (hero.clientWidth !== ancho) { ancho = hero.clientWidth; poner(); } }, 250); });
 
-  if (!fino || quieto) { estaticos(); return; }
-
-  /* ---------- versión animada (computador) ---------- */
-  var cv = document.getElementById("petalos"), cx = cv.getContext && cv.getContext("2d");
-  if (!cx) { estaticos(); return; }
-  cv.hidden = false;
-  var dpr = 1, W = 0, H = 0, P = [], rs = [], mx = 0, my = 0, ox = 0, oy = 0, prev = 0;
-  var COL = ["248,168,180", "255,186,200", "246,150,170", "255,208,220"];   // salmón de la marca, suavizado
-
-  function nuevo(p, arriba, slot) {
-    p.slot = slot;
-    p.x = slot * (W / p.cols) + Math.random() * (W / p.cols);   // un carril por pétalo: reparto parejo en todo el ancho
-    p.z = 0.4 + Math.random() * 0.6;                    // profundidad: más cerca = más grande, más rápido, más movimiento
-    p.s = 12 + p.z * 17;
-    p.vy = 9 + p.z * 17;
-    p.life = (H + 80) / p.vy;                           // segundos que tarda en cruzar la pantalla
-    p.t = arriba ? 0 : Math.random() * p.life;           // al inicio cada uno parte en un punto distinto
-    p.y0 = -40;
-    p.amp = 12 + Math.random() * 26; p.f = 0.25 + Math.random() * 0.35; p.ph = Math.random() * 6.3;
-    p.rot = Math.random() * 6.3; p.vr = (Math.random() - 0.5) * 0.9;
-    p.flip = Math.random() * 6.3; p.vf = 0.6 + Math.random() * 1.2;
-    p.c = COL[Math.floor(Math.random() * COL.length)];
-    p.amax = 0.06 + p.z * 0.04;                         // 6% a 10% p.a = 0;
-    return p;
-  }
-  function tam() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = cv.clientHeight || window.innerHeight; ancho = W;
-    cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var n = Math.max(12, Math.min(24, Math.round(W * H / 56000)));
-    P = [];
-    for (var i = 0; i < n; i++) P.push(nuevo({ cols: n }, false, i));
-  }
-  function petalo(p, x, y) {
-    cx.save(); cx.translate(x, y); cx.rotate(p.rot);
-    cx.scale(1, 0.55 + 0.45 * Math.abs(Math.cos(p.flip)));     // da la vuelta mientras cae
-    var s = p.s;
-    cx.beginPath();
-    cx.moveTo(0, s * 0.95);
-    cx.bezierCurveTo(-s * 0.95, s * 0.45, -s * 0.85, -s * 0.75, -s * 0.18, -s * 0.8);
-    cx.lineTo(0, -s * 0.52);
-    cx.lineTo(s * 0.18, -s * 0.8);
-    cx.bezierCurveTo(s * 0.85, -s * 0.75, s * 0.95, s * 0.45, 0, s * 0.95);
-    cx.fillStyle = "rgba(" + p.c + "," + p.a.toFixed(3) + ")";
-    cx.fill();
-    cx.restore();
-  }
-  function cuadro(t) {
-    var dt = Math.min(0.05, prev ? (t - prev) / 1000 : 0.016); prev = t;
-    ox += (mx - ox) * 0.06; oy += (my - oy) * 0.06;
-    cx.clearRect(0, 0, W, H);
+  if (!mueve) return;
+  /* computador: los pétalos caen despacio dentro de la portada, aparecen y se desvanecen,
+     y se mueven con el mouse. Van pegados a la portada: el scroll no los afecta. */
+  var mx = 0, my = 0, ox = 0, oy = 0, prev = 0;
+  function estado() {
+    var H = hero.clientHeight, W = hero.clientWidth;
     for (var i = 0; i < P.length; i++) {
-      var p = P[i];
-      p.t += dt; p.ph += p.f * dt; p.rot += p.vr * dt; p.flip += p.vf * dt;
-      if (p.t >= p.life) nuevo(p, true, p.slot);
-      var k = p.t / p.life;
-      var x = p.x + Math.sin(p.ph) * p.amp - ox * 14 * p.z, y = p.y0 + p.vy * p.t - oy * 10 * p.z;
-      var env = Math.min(1, k / 0.18, (1 - k) / 0.28);        // aparece al inicio y se desvanece antes de salir
-      p.a = p.amax * env;                                 // solo depende del tiempo, nunca del scroll
-      if (p.a > 0.01) petalo(p, x, y);
+      var p = P[i], z = +p.dataset.z;
+      p.x0 = parseFloat(p.style.left); p.w = parseFloat(p.style.width);
+      p.vy = 10 + z * 20;
+      p.life = (H + 100) / p.vy;
+      p.t = Math.random() * p.life;                       // cada uno parte en un punto distinto
+      p.amp = 14 + Math.random() * 26; p.f = 0.25 + Math.random() * 0.3; p.ph = Math.random() * 6.3;
+      p.rot = +p.dataset.rot; p.vr = (Math.random() - 0.5) * 22;       // grados por segundo
+      p.flip = Math.random() * 6.3; p.vf = 0.6 + Math.random() * 1.1;
+      p.amax = 0.06 + z * 0.04;                            // 6% a 10%
+      p.style.top = "0px";
     }
-    requestAnimationFrame(cuadro);
   }
+  estado();
+  window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(function () { estado(); }, 280); });
   window.addEventListener("pointermove", function (e) {
     if (e.pointerType && e.pointerType !== "mouse") return;
-    mx = e.clientX / W - 0.5; my = e.clientY / H - 0.5;
+    mx = e.clientX / window.innerWidth - 0.5; my = e.clientY / window.innerHeight - 0.5;
   }, { passive: true });
-  var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(function () { if (window.innerWidth !== ancho) tam(); }, 200); });   // el scroll nunca reinicia los pétalos
-  tam(); requestAnimationFrame(cuadro);
+  (function mover(t) {
+    var dt = Math.min(0.05, prev ? (t - prev) / 1000 : 0.016); prev = t;
+    ox += (mx - ox) * 0.06; oy += (my - oy) * 0.06;
+    if (window.scrollY < hero.offsetHeight + 200) {         // solo se dibuja mientras la portada se ve
+      for (var i = 0; i < P.length; i++) {
+        var p = P[i], z = +p.dataset.z;
+        p.t += dt; p.ph += p.f * dt; p.rot += p.vr * dt; p.flip += p.vf * dt;
+        if (p.t >= p.life) p.t = 0;
+        var k = p.t / p.life, env = Math.min(1, k / 0.2, (1 - k) / 0.3);
+        var x = Math.sin(p.ph) * p.amp - ox * 70 * z, y = -50 + p.vy * p.t - oy * 50 * z;
+        p.style.opacity = (p.amax * env).toFixed(3);
+        p.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) rotate(" + p.rot.toFixed(1) + "deg) scaleX(" + (0.6 + 0.4 * Math.abs(Math.cos(p.flip))).toFixed(2) + ")";
+      }
+    }
+    requestAnimationFrame(mover);
+  })(0);
 
-  /* portada: la foto se mueve un poco con el mouse */
+  /* la foto de portada: mismo movimiento suave con el mouse */
   var bg = document.querySelector(".hero-bg");
   if (bg) {
     var bx = 0, by = 0;
-    (function mover() {
+    (function foto() {
       bx += (mx - bx) * 0.05; by += (my - by) * 0.05;
       if (window.scrollY < window.innerHeight * 1.2)
         bg.style.transform = "translate3d(" + (-bx * 22).toFixed(2) + "px," + (-by * 16).toFixed(2) + "px,0) scale(1.04)";
-      requestAnimationFrame(mover);
+      requestAnimationFrame(foto);
     })();
   }
 })();
