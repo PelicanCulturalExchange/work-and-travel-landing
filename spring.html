@@ -76,9 +76,9 @@ body { background: var(--page); }
 main, .top, footer { position: relative; }
 .top, footer { z-index: 3; }
 .s > .wrap, .hero > .wrap { position: relative; z-index: 2; }
-#petalos { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-.petalos-fijos { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
-.petalos-fijos i { position: absolute; display: block; width: 24px; height: 20px; opacity: .08; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 24'%3E%3Cpath d='M14 23C6 19 1 12 3 6c2-5 7-6 9-2l2 3 2-3c2-4 7-3 9 2 2 6-3 13-11 17z' fill='%23f3c2c6'/%3E%3C/svg%3E"); }
+#petalos { position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; z-index: 1; }
+.petalos-fijos { position: fixed; left: 0; top: 0; width: 100%; height: 100vh; height: 100lvh; pointer-events: none; z-index: 1; overflow: hidden; }
+.petalos-fijos i { position: absolute; display: block; width: 24px; height: 20px; opacity: .07; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 24'%3E%3Cpath d='M14 23C6 19 1 12 3 6c2-5 7-6 9-2l2 3 2-3c2-4 7-3 9 2 2 6-3 13-11 17z' fill='%23f3c2c6'/%3E%3C/svg%3E"); }
 
 /* secciones claras: paneles redondeados en blanco suave (menos reflejo que el blanco puro) */
 .bg-white { background: #f3f7f6; color: #0b2a38; }
@@ -743,6 +743,7 @@ footer small { opacity: .75; font-size: 13px; }
 (function () {
   "use strict";
   var mq = window.matchMedia || function () { return { matches: false }; };
+  var ancho = 0;
   var fino = mq("(hover: hover) and (pointer: fine)").matches;
   var quieto = mq("(prefers-reduced-motion: reduce)").matches;
   var BLOQUES = ".wrap h1,.wrap h2,.wrap h3,.wrap p,.wrap li,.wrap a,.wrap img,.wrap summary,.wrap details,.card,.glass,.mint,.job,.box,.tag,.no-box,.chip,.step,.jay,.poster,.crew img,.sec-head,.bg-white,.top,footer";
@@ -768,7 +769,7 @@ footer small { opacity: .75; font-size: 13px; }
     document.body.appendChild(cap);
     function poner() {
       cap.innerHTML = "";
-      var W = window.innerWidth, H = window.innerHeight, semilla = 7;
+      var W = window.innerWidth, H = cap.clientHeight || window.innerHeight, semilla = 7; ancho = W;
       function rnd() { semilla = (semilla * 9301 + 49297) % 233280; return semilla / 233280; }
       var cols = W < 600 ? 3 : 6, filas = W < 600 ? 5 : 4;          // reparto parejo en toda la pantalla
       for (var f = 0; f < filas; f++) for (var c = 0; c < cols; c++) {
@@ -779,7 +780,7 @@ footer small { opacity: .75; font-size: 13px; }
         cap.appendChild(i);
       }
     }
-    var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(poner, 300); });
+    var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(function () { if (window.innerWidth !== ancho) poner(); }, 300); });   // solo si cambia el ancho
     poner();
   }
 
@@ -805,12 +806,12 @@ footer small { opacity: .75; font-size: 13px; }
     p.rot = Math.random() * 6.3; p.vr = (Math.random() - 0.5) * 0.9;
     p.flip = Math.random() * 6.3; p.vf = 0.6 + Math.random() * 1.2;
     p.c = COL[Math.floor(Math.random() * COL.length)];
-    p.amax = 0.14 + p.z * 0.14; p.a = 0;
+    p.amax = 0.06 + p.z * 0.04;                         // 6% a 10% p.a = 0;
     return p;
   }
   function tam() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = window.innerHeight;
+    W = window.innerWidth; H = cv.clientHeight || window.innerHeight; ancho = W;
     cv.width = W * dpr; cv.height = H * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
     var n = Math.max(12, Math.min(24, Math.round(W * H / 56000)));
     P = [];
@@ -850,7 +851,7 @@ footer small { opacity: .75; font-size: 13px; }
     if (e.pointerType && e.pointerType !== "mouse") return;
     mx = e.clientX / W - 0.5; my = e.clientY / H - 0.5;
   }, { passive: true });
-  var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(tam, 200); });
+  var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(function () { if (window.innerWidth !== ancho) tam(); }, 200); });   // el scroll nunca reinicia los pétalos
   tam(); requestAnimationFrame(cuadro);
 
   /* portada: la foto se mueve un poco con el mouse */
