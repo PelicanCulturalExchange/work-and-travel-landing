@@ -77,8 +77,8 @@ main, .top, footer { position: relative; }
 .top, footer { z-index: 3; }
 .s > .wrap, .hero > .wrap { position: relative; z-index: 2; }
 #petalos { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-.petalos-fijos { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; z-index: 1; overflow: hidden; }
-.petalos-fijos i { position: absolute; display: block; width: 24px; height: 20px; opacity: .09; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 24'%3E%3Cpath d='M14 23C6 19 1 12 3 6c2-5 7-6 9-2l2 3 2-3c2-4 7-3 9 2 2 6-3 13-11 17z' fill='%23f3c2c6'/%3E%3C/svg%3E"); }
+.petalos-fijos { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+.petalos-fijos i { position: absolute; display: block; width: 24px; height: 20px; opacity: .08; background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 24'%3E%3Cpath d='M14 23C6 19 1 12 3 6c2-5 7-6 9-2l2 3 2-3c2-4 7-3 9 2 2 6-3 13-11 17z' fill='%23f3c2c6'/%3E%3C/svg%3E"); }
 
 /* secciones claras: paneles redondeados en blanco suave (menos reflejo que el blanco puro) */
 .bg-white { background: #f3f7f6; color: #0b2a38; }
@@ -739,7 +739,7 @@ footer small { opacity: .75; font-size: 13px; }
 /* Ambiente de primavera.
    Computador con mouse: pétalos que caen despacio sobre la pantalla (fijos a la ventana, el scroll no los mueve),
    aparecen y se desvanecen, van detrás del contenido y se mueven un poco con el mouse, igual que la foto de portada.
-   Celular, tablet o "reducir movimiento": pocos pétalos quietos y casi invisibles, solo en espacios libres. */
+   Celular, tablet o "reducir movimiento": pocos pétalos quietos y casi invisibles, repartidos por la ventana. */
 (function () {
   "use strict";
   var mq = window.matchMedia || function () { return { matches: false }; };
@@ -761,32 +761,26 @@ footer small { opacity: .75; font-size: 13px; }
     return true;
   }
 
-  /* ---------- versión quieta (celular / reducir movimiento) ---------- */
+  /* ---------- versión quieta (celular / reducir movimiento): capa fija a la ventana ---------- */
   function estaticos() {
     var cap = document.createElement("div");
     cap.className = "petalos-fijos"; cap.setAttribute("aria-hidden", "true");
     document.body.appendChild(cap);
     function poner() {
       cap.innerHTML = "";
-      var H = document.documentElement.scrollHeight, W = document.documentElement.clientWidth;
-      cap.style.height = H + "px";
-      var rs = rectsDoc(10), filas = Math.max(6, Math.round(H / 520)), puestos = 0, semilla = 7;
+      var W = window.innerWidth, H = window.innerHeight, semilla = 7;
       function rnd() { semilla = (semilla * 9301 + 49297) % 233280; return semilla / 233280; }
-      for (var f = 0; f < filas; f++) {
-        for (var t = 0; t < 14; t++) {           // busca un hueco libre en esta franja de la página
-          var x = 6 + rnd() * (W - 26), y = (f + rnd()) * H / filas;
-          if (libre(rs, x + 7, y + 6) && libre(rs, x, y) && libre(rs, x + 14, y + 12)) {
-            var i = document.createElement("i");
-            i.style.left = x + "px"; i.style.top = y + "px";
-            i.style.transform = "rotate(" + Math.round(rnd() * 360) + "deg) scale(" + (0.7 + rnd() * 0.5).toFixed(2) + ")";
-            cap.appendChild(i); puestos++; break;
-          }
-        }
+      var cols = W < 600 ? 3 : 6, filas = W < 600 ? 5 : 4;          // reparto parejo en toda la pantalla
+      for (var f = 0; f < filas; f++) for (var c = 0; c < cols; c++) {
+        var i = document.createElement("i");
+        i.style.left = ((c + 0.15 + rnd() * 0.7) / cols * W) + "px";
+        i.style.top = ((f + 0.15 + rnd() * 0.7) / filas * H) + "px";
+        i.style.transform = "rotate(" + Math.round(rnd() * 360) + "deg) scale(" + (0.8 + rnd() * 0.5).toFixed(2) + ")";
+        cap.appendChild(i);
       }
     }
-    var tm; function luego() { clearTimeout(tm); tm = setTimeout(poner, 300); }
-    if (document.readyState === "complete") poner(); else window.addEventListener("load", poner);
-    window.addEventListener("resize", luego);
+    var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(poner, 300); });
+    poner();
   }
 
   if (!fino || quieto) { estaticos(); return; }
@@ -821,7 +815,6 @@ footer small { opacity: .75; font-size: 13px; }
     var n = Math.max(12, Math.min(24, Math.round(W * H / 56000)));
     P = [];
     for (var i = 0; i < n; i++) P.push(nuevo({ cols: n }, false, i));
-    rs = rectsDoc(14);
   }
   function petalo(p, x, y) {
     cx.save(); cx.translate(x, y); cx.rotate(p.rot);
@@ -841,7 +834,6 @@ footer small { opacity: .75; font-size: 13px; }
     var dt = Math.min(0.05, prev ? (t - prev) / 1000 : 0.016); prev = t;
     ox += (mx - ox) * 0.06; oy += (my - oy) * 0.06;
     cx.clearRect(0, 0, W, H);
-    var sx = window.scrollX, sy = window.scrollY;
     for (var i = 0; i < P.length; i++) {
       var p = P[i];
       p.t += dt; p.ph += p.f * dt; p.rot += p.vr * dt; p.flip += p.vf * dt;
@@ -849,8 +841,7 @@ footer small { opacity: .75; font-size: 13px; }
       var k = p.t / p.life;
       var x = p.x + Math.sin(p.ph) * p.amp - ox * 14 * p.z, y = p.y0 + p.vy * p.t - oy * 10 * p.z;
       var env = Math.min(1, k / 0.18, (1 - k) / 0.28);        // aparece al inicio y se desvanece antes de salir
-      var meta = libre(rs, x + sx, y + sy) ? p.amax * env : 0;   // detrás de texto o recuadro: se apaga
-      p.a += (meta - p.a) * (meta ? 0.12 : 0.3);
+      p.a = p.amax * env;                                 // solo depende del tiempo, nunca del scroll
       if (p.a > 0.01) petalo(p, x, y);
     }
     requestAnimationFrame(cuadro);
@@ -860,10 +851,6 @@ footer small { opacity: .75; font-size: 13px; }
     mx = e.clientX / W - 0.5; my = e.clientY / H - 0.5;
   }, { passive: true });
   var tm; window.addEventListener("resize", function () { clearTimeout(tm); tm = setTimeout(tam, 200); });
-  window.addEventListener("load", function () { rs = rectsDoc(14); });
-  document.addEventListener("toggle", function () { rs = rectsDoc(14); }, true);   // al abrir una pregunta frecuente
-  document.addEventListener("click", function () { setTimeout(function () { rs = rectsDoc(14); }, 120); });  // el cuestionario cambia de tamaño
-  setInterval(function () { rs = rectsDoc(14); }, 2000);
   tam(); requestAnimationFrame(cuadro);
 
   /* portada: la foto se mueve un poco con el mouse */
