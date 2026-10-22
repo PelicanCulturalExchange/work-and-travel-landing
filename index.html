@@ -572,7 +572,7 @@ footer small { opacity: .75; font-size: 13px; }
     var msg = "Hola Pelican, soy " + nombre + ". Quiero más información sobre Work and Travel USA.";
     return "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(msg);
   }
-  function post(payload) {
+  function intento(payload) {
     if (!ENDPOINT) return Promise.reject(new Error("sin_endpoint"));
     var ctl = ("AbortController" in window) ? new AbortController() : null;
     var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 15000);
@@ -583,6 +583,27 @@ footer small { opacity: .75; font-size: 13px; }
       signal: ctl ? ctl.signal : undefined
     }).then(function (r) { return r.json(); }).then(function (j) { clearTimeout(timer); return j; },
       function (e) { clearTimeout(timer); throw e; });
+  }
+  /* Una respuesta de "lead" solo cuenta si trae los datos que devuelve el receptor al guardar (campo "repetido").
+     Si Google responde otra cosa (404, página de información, etc.), se reintenta hasta 3 veces antes de mostrar el error. */
+  function respuestaValida(j, payload) {
+    if (!j || typeof j.ok !== "boolean") return false;
+    if (payload.accion !== "lead") return true;
+    return j.ok ? typeof j.repetido === "boolean" : typeof j.error === "string";
+  }
+  function post(payload) {
+    var intentos = 0;
+    function go() {
+      intentos++;
+      return intento(payload).then(function (j) {
+        if (respuestaValida(j, payload)) return j;
+        throw new Error("respuesta_invalida");
+      }).catch(function (e) {
+        if (intentos >= 3) throw e;
+        return new Promise(function (r) { setTimeout(r, 800 * intentos); }).then(go);
+      });
+    }
+    return go();
   }
 
   var UNIS = ["Universidad Central del Ecuador", "ESPE", "Escuela Politécnica Nacional", "USFQ", "PUCE", "UDLA", "Universidad Politécnica Salesiana", "Universidad de las Américas", "UTE", "UIDE", "Universidad Internacional SEK", "Universidad Tecnológica Indoamérica", "Universidad Andina Simón Bolívar", "Universidad Católica de Cuenca", "Universidad de Cuenca", "Universidad de Guayaquil", "ESPOL", "Universidad Católica de Santiago de Guayaquil", "Universidad Técnica de Ambato", "Universidad Técnica del Norte"];
