@@ -703,7 +703,7 @@ footer small { opacity: .75; font-size: 13px; }
         if (f.web && f.web.value) return;
         var nombre = f.nombre.value.trim().replace(/\s+/g, " "), tel = normPhone(f.whatsapp.value), bad = null;
         ans.nombre = nombre; ans.whatsapp = f.whatsapp.value;
-        if (nombre.length < 3 || nombre.split(" ").length < 2 || /\d/.test(nombre)) { setErr("en", "Escribe tu nombre y apellido.", f.nombre); bad = bad || f.nombre; } else setErr("en", "", f.nombre);
+        if (nombre.length < 3) { setErr("en", "Escribe tu nombre.", f.nombre); bad = bad || f.nombre; } else setErr("en", "", f.nombre);
         if (!tel) { setErr("et", "Escribe tu celular de Ecuador: 10 dígitos que empiezan con 09, por ejemplo 0991234567.", f.whatsapp); bad = bad || f.whatsapp; }
         else if (tel === "fake") { setErr("et", "Ese número no parece real. Revísalo, por favor.", f.whatsapp); bad = bad || f.whatsapp; }
         else { setErr("et", "", f.whatsapp); f.whatsapp.value = prettyPhone(tel); }
