@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pelican Work and Travel USA | La agencia más cool</title>
-<meta name="description" content="Trabaja y viaja en Estados Unidos con Pelican Cultural Exchange. Work and Travel con visa J-1 para universitarios de 18 a 25 años. Responde unas preguntas rápidas y un asesor te contacta.">
+<meta name="description" content="Trabaja y viaja en Estados Unidos con Pelican Cultural Exchange. Work and Travel con visa J-1 para universitarios de 18 a 26 años. Responde unas preguntas rápidas y un asesor te contacta.">
 <meta property="og:title" content="Pelican Work and Travel USA">
 <meta property="og:description" content="Tu verano en EE.UU. trabajando y viajando. Un asesor te contacta por WhatsApp.">
 <meta property="og:type" content="website">
@@ -456,7 +456,7 @@ footer small { opacity: .75; font-size: 13px; }
       <div class="box reveal">
         <h3>Perfil del programa</h3>
         <ul class="ticks">
-          <li><span>Tener de 18 a 25 años</span></li>
+          <li><span>Tener de 18 a 26 años</span></li>
           <li><span>Estudiar presencial en una universidad acreditada</span></li>
           <li><span>Inglés conversacional</span></li>
           <li><span>Ganas de viajar y aprender</span></li>
@@ -608,10 +608,10 @@ footer small { opacity: .75; font-size: 13px; }
 
   var UNIS = ["Universidad Central del Ecuador", "ESPE", "Escuela Politécnica Nacional", "USFQ", "PUCE", "UDLA", "Universidad Politécnica Salesiana", "Universidad de las Américas", "UTE", "UIDE", "Universidad Internacional SEK", "Universidad Tecnológica Indoamérica", "Universidad Andina Simón Bolívar", "Universidad Católica de Cuenca", "Universidad de Cuenca", "Universidad de Guayaquil", "ESPOL", "Universidad Católica de Santiago de Guayaquil", "Universidad Técnica de Ambato", "Universidad Técnica del Norte"];
 
-  var REQ_LIST = '<ul class="ticks" style="margin-top:10px"><li><span>Ser estudiante universitario presencial</span></li><li><span>Tener de 18 a 25 años</span></li><li><span>Poder viajar en Primavera (febrero – mayo) o Verano (mayo – agosto)</span></li><li><span>Inglés conversacional</span></li></ul>';
+  var REQ_LIST = '<ul class="ticks" style="margin-top:10px"><li><span>Ser estudiante universitario presencial</span></li><li><span>Tener de 18 a 26 años</span></li><li><span>Poder viajar en Primavera (febrero – mayo) o Verano (mayo – agosto)</span></li><li><span>Inglés conversacional</span></li></ul>';
   var REJECT = {
     no_presencial: "Work and Travel es solo para estudiantes universitarios que estudian de forma presencial.",
-    edad: "El programa es para jóvenes de entre 18 y 25 años.",
+    edad: "El programa es para jóvenes de entre 18 y 26 años.",
     temporada: "El programa se hace en dos temporadas, Primavera (febrero – mayo) y Verano (mayo – agosto), y necesitas poder viajar en alguna de ellas."
   };
 
@@ -712,7 +712,7 @@ footer small { opacity: .75; font-size: 13px; }
         var inp = f.edad, raw = inp.value.trim();
         if (!/^\d{1,2}$/.test(raw)) { setErr("e", "Escribe tu edad con números, por ejemplo 21.", inp); inp.focus(); return; }
         var n = parseInt(raw, 10); ans.edad = String(n);
-        if (n < 18 || n > 25) return reject("edad");
+        if (n < 18 || n > 26) return reject("edad");
         return next();
       }
       if (k === "universidad") {
