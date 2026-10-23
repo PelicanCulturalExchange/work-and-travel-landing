@@ -349,6 +349,14 @@ footer small { opacity: .75; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .card.quiz { animation: none; } .barra-form { transition: none; } }
 </style>
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','965255158746620');
+fbq('track','PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=965255158746620&ev=PageView&noscript=1"></noscript>
+<!-- End Meta Pixel -->
 </head>
 <body>
 
@@ -728,6 +736,7 @@ footer small { opacity: .75; font-size: 13px; }
 
     function showResult(saved, nombre) {
       var first = esc(nombre.split(" ")[0]);
+      if (saved && window.fbq) { try { fbq("track", "Lead"); } catch (_) {} }
       var wa = '<a class="btn alt" target="_blank" rel="noopener" href="' + waLink(nombre) + '">Abrir WhatsApp</a>';
       root.innerHTML = saved
         ? '<div class="ok"><h3 tabindex="-1" class="q-title">¡Listo, ' + first + '!</h3><p>Cumples los requisitos. Un asesor te escribirá pronto por WhatsApp.</p>' + wa + '<p class="tiny">Si quieres adelantarte, escríbenos tú primero.</p></div>'
@@ -737,6 +746,7 @@ footer small { opacity: .75; font-size: 13px; }
 
     root.addEventListener("click", function (e) {
       var o = e.target.closest(".opt"), k = STEPS[i];
+      if (o && i === 0 && window.fbq && !window.__qi) { window.__qi = 1; try { fbq("trackCustom", "QuizInicio"); } catch (_) {} }
       if (e.target.closest(".q-back")) { if (i > 0) { i--; interacted = true; render(); } return; }
       if (e.target.closest(".q-fix")) { render(); return; }
       if (!o) return;
