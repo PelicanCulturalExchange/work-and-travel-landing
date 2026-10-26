@@ -666,9 +666,18 @@ fbq('track','PageView');
     temporada: "Este programa es de la temporada Spring, de febrero a mayo, y necesitas poder viajar en esas fechas."
   };
 
+  /* ---------- eventos del píxel (embudo) ---------- */
+  function ev(name, params) { try { if (window.fbq) fbq("trackCustom", name, params || {}); } catch (_) {} }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("a.btn, a[href^='#'], a[href*='wa.me'], a[href*='whatsapp']");
+    if (!a) return;
+    var h = a.getAttribute("href") || "", t = (a.textContent || "").trim().slice(0, 40);
+    ev("CTAClick", { destino: h.slice(0, 60), texto: t });
+  }, true);
+
   /* ---------- cuestionario ---------- */
   function Quiz(root) {
-    var src = root.dataset.src, i = 0, ans = {}, interacted = false, busy = false, started = Date.now();
+    var src = root.dataset.src, i = 0, ans = {}, interacted = false, busy = false, started = Date.now(), seen = {}, vio = false;
     var STEPS = ["presencial", "edad", "temporada", "ingles", "universidad", "contacto"];
     var uid = "q" + Math.random().toString(36).slice(2, 7);
 
@@ -712,6 +721,7 @@ fbq('track','PageView');
           '<button class="btn" type="submit">Quiero más info</button></form>';
       }
       root.innerHTML = h + b;
+      if (interacted && !seen[k]) { seen[k] = 1; ev("QuizPaso", { paso: i + 1, pregunta: k, formulario: src }); }
       if (interacted) {
         var f = root.querySelector("input[name=edad],input[name=universidad],input[name=nombre]");
         if (f) f.focus(); else { var t = root.querySelector(".q-title"); if (t) t.focus({ preventScroll: true }); }
@@ -724,6 +734,7 @@ fbq('track','PageView');
     }
 
     function reject(motivo) {
+      ev("QuizDescarte", { motivo: motivo, paso: i + 1, formulario: src });
       post({ accion: "descarte", motivo: motivo, edad: ans.edad || "", temporada: ans.temporada || "", utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign, formulario: src }).catch(function () { });
       root.innerHTML = '<div class="rej"><h3 tabindex="-1" class="q-title">Gracias por tu interés</h3>' +
         '<p>' + REJECT[motivo] + '</p><p style="margin-top:10px"><b>Para aplicar necesitas:</b></p>' + REQ_LIST +
@@ -783,6 +794,7 @@ fbq('track','PageView');
         else { setErr("et", "", f.whatsapp); f.whatsapp.value = prettyPhone(tel); }
         if (!f.consent.checked) { setErr("ec", "Marca la casilla para que podamos contactarte."); bad = bad || f.consent; } else setErr("ec", "");
         if (bad) { bad.focus(); return; }
+        ev("QuizEnvio", { formulario: src });
         busy = true;
         var btn = f.querySelector("button[type=submit]"); btn.disabled = true; btn.textContent = "Enviando…";
         post({
@@ -790,8 +802,8 @@ fbq('track','PageView');
           presencial: true, edad: parseInt(ans.edad, 10), temporada: ans.temporada, ingles: ans.ingles, universidad: ans.universidad,
           utm_source: utm.utm_source, utm_medium: utm.utm_medium, utm_campaign: utm.utm_campaign,
           formulario: src, fecha_iso: new Date().toISOString(), web: "", segundos: Math.round((Date.now() - started) / 1000)
-        }).then(function (j) { busy = false; showResult(!!(j && j.ok), nombre); })
-          .catch(function () { busy = false; showResult(false, nombre); });
+        }).then(function (j) { busy = false; if (!(j && j.ok)) ev("QuizEnvioError", { error: String((j && j.error) || "sin_ok"), formulario: src }); showResult(!!(j && j.ok), nombre); })
+          .catch(function (er) { busy = false; ev("QuizEnvioError", { error: "red:" + String(er && er.message || er).slice(0, 40), formulario: src }); showResult(false, nombre); });
       }
     });
 
@@ -800,6 +812,12 @@ fbq('track','PageView');
       setErr(id, "", e.target);
     });
 
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (en) {
+        if (en[0] && en[0].isIntersecting) { ev("QuizVisible", { formulario: src }); io.disconnect(); }
+      }, { threshold: 0.5 });
+      io.observe(root);
+    }
     render();
   }
 
