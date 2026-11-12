@@ -234,9 +234,9 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   }
   function setOnline(v) { if (online !== v) { online = v; var n = $("net"); if (n) n.hidden = v; } }
   function setSkew(ahora) { var t = Date.parse(ahora); if (!isNaN(t)) S.skew = t - Date.now(); }
-  function api(p) {
+  function api(p, ms) {
     p = Object.assign({ pin: S.pin }, p);
-    return net(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(p) }).then(function (j) { if (j && j.ahora) setSkew(j.ahora); return j; });
+    return net(ENDPOINT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(p) }, ms || 90000).then(function (j) { if (j && j.ahora) setSkew(j.ahora); return j; });
   }
   function apiGet(params) {
     var q = Object.keys(params).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");
@@ -267,7 +267,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
   function rowById(id) { for (var i = 0; i < S.rows.length; i++) if (S.rows[i].id === id) return S.rows[i]; return null; }
   function syncLeads() {
     if (syncing || !S.pin) return Promise.resolve();
-    var list = pending().slice(0, 40);
+    var list = pending().slice(0, 15);
     if (!list.length) return Promise.resolve();
     syncing = true;
     var vers = {}; list.forEach(function (r) { vers[r.id] = r.ver; });
