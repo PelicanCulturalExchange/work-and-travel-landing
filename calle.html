@@ -274,13 +274,14 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     return api({ accion: "calle_leads", leads: list.map(function (r) { return { id: r.id, nombre: r.nombre.trim(), whatsapp: normPhone(r.tel), universidad: r.uni, asesor: r.asesor, salida: r.sid, hora: r.hora, nota: (r.nota || "").trim() }; }) }).then(function (j) {
       syncing = false; setOnline(true);
       if (j && j.error === "pin") { logout("La clave cambió. Vuelve a entrar."); return; }
+      S.syncErr = (j && j.resultados) ? "" : ((j && (j.error || j.mensaje || j.detalle)) ? String(j.error || "") + (j.detalle ? " · " + j.detalle : "") + (j.mensaje ? " · " + j.mensaje : "") : "el servidor respondió vacío");
       ((j && j.resultados) || []).forEach(function (x) {
         var r = rowById(x.id); if (!r) return;
-        if (x.ok) { if (r.ver === vers[x.id]) { r.sent = true; r.dirty = false; } r.rep = !!x.repetido; r.err = ""; } else r.err = "No se pudo guardar";
+        if (x.ok) { if (r.ver === vers[x.id]) { r.sent = true; r.dirty = false; } r.rep = !!x.repetido; r.err = ""; } else { r.err = "No se pudo guardar"; S.syncErr = "el servidor rechazó un lead: " + String(x.error || x.motivo || x.mensaje || "sin detalle"); }
       });
       save(); updateRows(); updateProgress(); updateTeam();
-      if (pending().length) scheduleSync(1500);
-    }, function () { syncing = false; setOnline(false); });
+      if (pending().length) scheduleSync(S.syncErr ? 8000 : 1500);
+    }, function (e) { syncing = false; setOnline(false); S.syncErr = "sin respuesta del servidor (" + (e && e.name ? e.name : e) + ")"; save(); updateRows(); });
   }
   function runSync() { return flush().then(syncLeads); }
   function scheduleSync(ms) { clearTimeout(syncTimer); syncTimer = setTimeout(runSync, ms); }
@@ -546,7 +547,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     var box = $("rows"); if (!box) return;
     [].forEach.call(box.children, function (d) { var r = rowById(d.getAttribute("data-id")); if (r && !d.contains(document.activeElement)) { paintRow(d, r); } else if (r) { paintRow(d, r); } });
     var p = pending().length;
-    var si = $("syncinfo"); if (si) si.textContent = p ? p + " lead(s) por enviar" : "Todo enviado";
+    var si = $("syncinfo"); if (si) si.textContent = p ? p + " lead(s) por enviar" + (S.syncErr ? " · Error: " + S.syncErr : "") : "Todo enviado";
     var sb = $("send"); if (sb) sb.hidden = !p && online;
   }
   function addBlankIfNeeded() {
@@ -715,7 +716,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     $("app").innerHTML = '<div class="net" id="net" hidden>Sin señal: tus leads quedan guardados y se envían solos cuando vuelva.</div><section class="card"><h2>¡Buen trabajo, ' + esc(S.asesor) + '!</h2><p class="hint">' + esc(r.uni) + '</p>' +
       '<div class="stats"><div class="stat"><b>' + r.mine + '</b><small>leads tuyos</small></div><div class="stat"><b>' + r.total + ' / ' + r.meta + '</b><small>equipo · ' + pct + '% de la meta</small></div>' +
       '<div class="stat"><b>' + hm(r.entro) + ' – ' + hm(r.salio) + '</b><small>tu horario</small></div><div class="stat"><b>' + human(r.salio - r.entro) + '</b><small>tiempo en la salida</small></div></div>' +
-      '<p class="hint" id="rp" style="margin-top:12px;font-weight:700">' + (p ? p + ' lead(s) todavía sin enviar. Sigue con señal.' : 'Todos tus leads están enviados.') + '</p>' +
+      '<p class="hint" id="rp" style="margin-top:12px;font-weight:700">' + (p ? p + ' lead(s) todavía sin enviar. Sigue con señal.' + (S.syncErr ? ' Error: ' + esc(S.syncErr) : '') : 'Todos tus leads están enviados.') + '</p>' +
       '<button class="btn small blue" id="rs">Enviar pendientes</button></section>' +
       '<section class="card photo-card"><h2>¡Foto del equipo!</h2><p>Dieron todo en la calle. Ahora tómense una foto juntos, con la mejor energía y la mejor sonrisa. ¡Se la ganaron!</p>' +
       '<label class="btn file">Tomar la foto del equipo<input type="file" id="foto" accept="image/*"></label><p class="hint" id="fotoMsg" style="margin-top:8px"></p>' +
