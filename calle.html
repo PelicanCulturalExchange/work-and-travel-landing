@@ -283,6 +283,13 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
       if (pending().length) scheduleSync(S.syncErr ? 8000 : 1500);
     }, function (e) { syncing = false; setOnline(false); S.syncErr = "sin respuesta del servidor (" + (e && e.name ? e.name : e) + ")"; save(); updateRows(); });
   }
+  function exportPend() {
+    var L = pending(); if (!L.length) { alert("No hay leads pendientes."); return; }
+    function q(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+    var csv = "\ufeffnombre,whatsapp,universidad,asesor,hora,nota,id\n" + L.map(function (r) { return [q(r.nombre.trim()), q(normPhone(r.tel)), q(r.uni), q(r.asesor), q(r.hora), q(r.nota), q(r.id)].join(","); }).join("\n");
+    try { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "leads-pendientes-" + L.length + ".csv"; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000); } catch (e) { }
+    try { if (navigator.clipboard) navigator.clipboard.writeText(csv); } catch (e) { }
+  }
   function runSync() { return flush().then(syncLeads); }
   function scheduleSync(ms) { clearTimeout(syncTimer); syncTimer = setTimeout(runSync, ms); }
 
@@ -717,7 +724,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
       '<div class="stats"><div class="stat"><b>' + r.mine + '</b><small>leads tuyos</small></div><div class="stat"><b>' + r.total + ' / ' + r.meta + '</b><small>equipo · ' + pct + '% de la meta</small></div>' +
       '<div class="stat"><b>' + hm(r.entro) + ' – ' + hm(r.salio) + '</b><small>tu horario</small></div><div class="stat"><b>' + human(r.salio - r.entro) + '</b><small>tiempo en la salida</small></div></div>' +
       '<p class="hint" id="rp" style="margin-top:12px;font-weight:700">' + (p ? p + ' lead(s) todavía sin enviar. Sigue con señal.' + (S.syncErr ? ' Error: ' + esc(S.syncErr) : '') : 'Todos tus leads están enviados.') + '</p>' +
-      '<button class="btn small blue" id="rs">Enviar pendientes</button></section>' +
+      '<button class="btn small blue" id="rs">Enviar pendientes</button> <button class="btn small" id="rx" type="button">Descargar pendientes (respaldo)</button></section>' +
       '<section class="card photo-card"><h2>¡Foto del equipo!</h2><p>Dieron todo en la calle. Ahora tómense una foto juntos, con la mejor energía y la mejor sonrisa. ¡Se la ganaron!</p>' +
       '<label class="btn file">Tomar la foto del equipo<input type="file" id="foto" accept="image/*"></label><p class="hint" id="fotoMsg" style="margin-top:8px"></p>' +
       '<div class="thumbs">' + ((r.fotos || []).map(function (f) { return '<div class="thumb"><img alt="Foto del equipo" src="' + f.thumb + '"><span>' + (f.sent ? "✓" : "…") + '</span></div>'; }).join("")) + '</div></section>' +
@@ -726,6 +733,7 @@ textarea { width: 100%; font: inherit; font-size: 16px; color: var(--ink); min-h
     $("foto").onchange = function () { if (this.files && this.files[0]) addFoto(this.files[0]); };
     $("net").hidden = online; $("rs").hidden = !p;
     $("rs").onclick = function () { runSync().then(function () { screenResumen(); }); };
+    $("rx").hidden = !p; $("rx").onclick = exportPend;
     $("nueva").onclick = function () { S.resumen = null; save(); render(); };
   }
 
